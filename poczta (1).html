@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>Poczta – czytnik</title>
+<style>
+:root{--bg:#fff;--surf:#f1f3f4;--txt:#202124;--mut:#5f6368;--line:#e8eaed;--blue:#1a73e8;--sel:#e8f0fe;--star:#f4b400;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1f1f1f;--surf:#2d2e30;--txt:#e8eaed;--mut:#9aa0a6;--line:#3c4043;--blue:#8ab4f8;--sel:#1f3a5f;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1f1f1f;--surf:#2d2e30;--txt:#e8eaed;--mut:#9aa0a6;--line:#3c4043;--blue:#8ab4f8;--sel:#1f3a5f;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:10}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+#app{max-width:480px;margin:0 auto;min-height:100vh}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding:8px 12px}
+.search{display:flex;align-items:center;gap:2px;background:var(--surf);border-radius:28px;height:50px;padding:0 6px}
+.search input{flex:1;min-width:0;border:0;background:none;font:inherit;color:inherit;outline:0;padding:0 6px}
+.ic{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:var(--mut);flex:none}
+.ic:active{background:rgba(128,128,128,.2)}
+.ic svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.sub{display:flex;align-items:center;justify-content:space-between;padding:4px 16px}
+.sub h2{font-size:13px;color:var(--mut);margin:0;font-weight:600}
+.pill{border:1px solid var(--line);border-radius:16px;padding:5px 12px;font-size:13px}
+.pill.on{background:var(--sel);color:var(--blue);border-color:transparent}
+.row{display:flex;gap:12px;width:100%;text-align:left;padding:10px 16px;min-height:76px}
+.row:active{background:var(--surf)}
+.av{flex:none;width:40px;height:40px;border-radius:50%;color:#fff;display:grid;place-items:center;font-weight:600}
+.ln{flex:1;min-width:0}
+.l1{display:flex;justify-content:space-between;gap:8px}
+.l1 time{font-size:12px;color:var(--mut);flex:none}
+.l2,.l3 .sn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.l3{display:flex;align-items:center;gap:6px;color:var(--mut);font-size:13px}
+.l3 .sn{flex:1;min-width:0}
+.unread .nm,.unread .l2,.unread time{font-weight:700;color:var(--txt)}
+.chip{font-size:11px;background:var(--surf);border-radius:4px;padding:1px 6px;color:var(--mut);flex:none}
+.star{width:18px;height:18px;flex:none;fill:none;stroke:#9aa0a6;stroke-width:2}
+.star.on{fill:var(--star);stroke:var(--star)}
+.state{text-align:center;color:var(--mut);padding:56px 24px;display:grid;gap:12px;justify-items:center}
+.demo{text-align:center;color:var(--mut);font-size:12px;padding:16px}
+.sk .av{background:var(--surf)}
+.sk i{display:block;height:11px;border-radius:6px;background:var(--surf);margin:7px 0;animation:p 1.1s infinite alternate}
+.sk i:nth-child(2){width:70%}.sk i:nth-child(3){width:90%}
+@keyframes p{to{opacity:.4}}
+.spin svg{animation:r .8s linear infinite}@keyframes r{to{transform:rotate(360deg)}}
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:20}
+.drawer{width:82%;max-width:320px;height:100%;background:var(--bg);padding:calc(16px + env(safe-area-inset-top,0px)) 12px 16px;animation:s .2s ease}
+@keyframes s{from{transform:translateX(-100%)}}
+.drawer h1{font-size:22px;color:var(--blue);margin:8px 12px 0}
+.nav{display:flex;align-items:center;gap:16px;width:100%;height:48px;padding:0 16px 0 28px;margin-left:-12px;border-radius:0 24px 24px 0;text-align:left}
+.nav.on{background:var(--sel);color:var(--blue);font-weight:600}
+.nav svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2}
+.mut{color:var(--mut)}.sm{font-size:12px;margin:4px 12px}
+.msg{padding:4px 16px 32px;animation:f .18s ease}@keyframes f{from{opacity:0;transform:translateY(6px)}}
+.msg h1{font-size:21px;line-height:1.3;margin:8px 0}
+.from{display:flex;gap:12px;align-items:flex-start;margin:14px 0;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.from .t{flex:1;min-width:0;overflow-wrap:anywhere;font-size:13px}
+.body{overflow-wrap:anywhere;word-break:break-word;font-size:15.5px}
+.body *{max-width:100%}.body a{color:var(--blue)}
+.body table{display:block;overflow-x:auto;border-collapse:collapse}.body td,.body th{padding:4px 12px 4px 0}
+.body blockquote{margin:8px 0;padding-left:12px;border-left:3px solid var(--line);color:var(--mut)}
+.att{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.att .n{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ext{background:#fce8e6;color:#c5221f;font-size:11px;font-weight:700;padding:3px 6px;border-radius:4px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const T=(m,d,h,i)=>new Date(2026,m-1,d,h,i).toISOString();
+const R=(id,n,e,s,sn,d,u,l,a,b)=>({id,n,e,s,sn,d,u,st:0,f:"inbox",l:[l],a:a||[],b:b||"<p>"+sn+"</p>"});
+const IG="no-reply@mail.instagram.example",GO="no-reply@accounts.google.example",IH="bok@icehost.example",CG="noreply@chatgpt.example",CB="platnosci@cashbill.example";
+const MAILS=[
+R(1,"Instagram",IG,"Zobacz, co udostępniają gks_junior_starszy i 8 innych użytkowników","Sprawdź, co słychać w aplikacji Instagram gks_junior_starszy, slusarczykr1 i inni użytkownicy opublikowali coś nowego. Otwórz Instagram. Masz 1 powiadomienie, które mogło nie zostać wyświetlone.",T(10,25,9,41),0,"Social"),
+R(2,"Google Payments",GO,"Witamy w Google Payments!","Dziękujemy, że korzystasz z Google Payments. Założono profil płatności połączony z Twoim kontem Google. Powodem utworzenia profilu mogło być dokonanie zakupu w Google, dodanie formy płatności lub…",T(10,22,14,5),0,"Konto",[["Warunki korzystania z Google Payments.pdf","142 KB","PDF"]],"<p>Dziękujemy, że korzystasz z Google Payments.</p><p>Założono profil płatności połączony z Twoim kontem Google. Powodem utworzenia profilu mogło być dokonanie zakupu w Google, dodanie formy płatności lub zapisanie danych do rozliczeń.</p><p>Warunki korzystania znajdziesz w załączniku.</p>"),
+R(3,"IceHost.pl – Bezpie.",IH,"Przypomnienie – zawieszenie usługi","IceHost.PL Witaj kobus2. Twoja usługa (kuba lysy Serwer) została zawieszona. Dane będą dostępne jeszcze przez 12 dni. Wejdź na panel IceHost i przedłuż swój serwer, aby nie stracić danych.",T(10,21,8,0),1,"Hosting","","<p>Witaj kobus2.</p><p>Twoja usługa (<b>kuba lysy Serwer</b>) została zawieszona. Dane będą dostępne jeszcze przez <b>12 dni</b>.</p><p>Wejdź na panel IceHost i przedłuż swój serwer, aby nie stracić danych.</p><p><a href=\"https://example.com/panel\">Przejdź do panelu</a></p>"),
+R(4,"IceHost.pl – Bezpie.",IH,"Przypomnienie – ważność serwera","IceHost.PL Witaj kobus2. Twoja usługa (kuba lysy Serwer) na IceHost.pl wygaśnie w dniu: 21-10-2026. Wejdź na Panel IceHost i przedłuż swój serwer, aby nie stracić danych.",T(10,20,8,0),1,"Hosting"),
+R(5,"Instagram",IG,"Zobacz materiały użytkowników lifelesstachacz, _lacki_8 i innych w Twoich aktualnościach","Nowe osoby do odkrycia. Konta proponowane na podstawie Twoich zainteresowań: lifelesstachacz, _lacki_8 i jeszcze 4. Otwórz Instagram. Propozycje dla Ciebie.",T(10,19,17,22),1,"Social"),
+R(6,"Instagram",IG,"Zobacz, co udostępniają gks_junior_starszy i 1 inny użytkownik, którego obserwujesz","Sprawdź nowości na platformie Instagram: gks_junior_starszy, lks.wisloka_nieglowice_junior i inni użytkownicy udostępnili 2 zdjęcia.",T(10,18,18,3),1,"Social"),
+R(7,"GAIL’s",  "hello@gails.example","In good company","Around the table with Amy & Sophia",T(10,18,10,30),1,"Newsletter","","<h2>In good company</h2><p>Around the table with Amy &amp; Sophia.</p><p>Seasonal bakes, long lunches and a few favourite recipes from our bakers.</p>"),
+R(8,"Instagram",IG,"Zobacz, co udostępniają lks.wisloka_nieglowice_junior i 6 innych użytkowników","Sprawdź, co słychać w aplikacji Instagram lks.wisloka_nieglowice_junior, gks_junior_starszy i inni użytkownicy opublikowali coś nowego. Otwórz Instagram. Masz 1 powiadomienie.",T(10,17,16,48),1,"Social"),
+R(9,"Instagram",IG,"Zobacz materiały użytkowników _lacki_8, kacper_zychowski i innych w Twoich aktualnościach","Nowe osoby do odkrycia. Konta proponowane na podstawie Twoich zainteresowań: _lacki_8, kacper_zychowski i jeszcze 4. Otwórz Instagram. Propozycje dla Ciebie.",T(10,12,19,12),1,"Social"),
+R(10,"Instagram",IG,"Zobacz, co udostępniają lks.wisloka_nieglowice_junior i 8 innych użytkowników","Sprawdź, co słychać w aplikacji Instagram lks.wisloka_nieglowice_junior, jakubmamrol i inni użytkownicy opublikowali coś nowego. Otwórz Instagram. Masz 1 powiadomienie, które mogło nie zostać wyświetlone.",T(10,9,15,5),1,"Social"),
+R(11,"ChatGPT",CG,"4 nowych stylów obrazów do wypróbowania","Z lotu ptaka czy Puszka kolekcjonerska? Spójrz na swoje zdjęcia w nowy sposób. Wybierz pomysł poniżej i zobacz, co jest możliwe. Z lotu ptaka, Puszka kolekcjonerska, Szkic.",T(10,7,12,0),1,"AI","","<p>Z lotu ptaka czy Puszka kolekcjonerska? Spójrz na swoje zdjęcia w nowy sposób.</p><p>Wybierz pomysł poniżej i zobacz, co jest możliwe:</p><ul><li>Z lotu ptaka</li><li>Puszka kolekcjonerska</li><li>Szkic</li></ul>"),
+R(12,"Instagram",IG,"Zobacz materiały użytkowników _0sk4r_896, djmlukaspl i innych w Twoich aktualnościach","Nowe osoby do odkrycia. Konta proponowane na podstawie Twoich zainteresowań: _0sk4r_896, djmlukaspl i jeszcze 4. Otwórz Instagram.",T(10,4,18,20),1,"Social"),
+R(13,"Instagram",IG,"Zobacz, co udostępniają lks.wisloka_nieglowice_junior i 1 inny użytkownik, którego obserwujesz","Sprawdź nowości na platformie Instagram: lks.wisloka_nieglowice_junior, gks_junior_starszy i inni użytkownicy udostępnili 2 zdjęcia.",T(10,2,17,9),1,"Social"),
+R(14,"Instagram",IG,"Zobacz, co udostępniają lks.wisloka_nieglowice_junior i 8 innych użytkowników","Sprawdź, co słychać w aplikacji Instagram lks.wisloka_nieglowice_junior, gks_junior_starszy i inni użytkownicy opublikowali coś nowego. Otwórz Instagram. Masz 1 powiadomienie, które mogło nie zostać wyświetlone.",T(10,1,16,33),1,"Social"),
+R(15,"Google",GO,"Udostępniasz niektóre dane na koncie Google usłudze Microsoft Products","Kontroluj dane na swoim koncie Google. Otrzymujesz tego e-maila, ponieważ 29 września o godzinie 10:06 została przez Ciebie użyta funkcja Zaloguj się przez Google.",T(9,29,10,7),0,"Konto"),
+R(16,"Google",GO,"Alert bezpieczeństwa","Nowe logowanie z urządzenia Android. Wykryliśmy nowe logowanie na Twoje konto Google z urządzenia Android. Jeśli to Ty, nie musisz nic robić. Jeśli nie, pomożemy Ci zabezpieczyć konto.",T(9,29,9,30),1,"Konto"),
+R(17,"ChatGPT",CG,"Expiring soon: Your free month of ChatGPT Plus","Create more with smarter models. Try Plus free for a month. Upgrade to ChatGPT Plus for free: create more advanced images, send more messages, and access smarter tools.",T(9,29,9,0),1,"AI"),
+R(18,"OpenAI","noreply@openai.example","New sign-in to your OpenAI account","New sign-in details for your OpenAI account. Hello, we noticed a new sign-in to your OpenAI account. App: ChatGPT Web. Time: September 28, 2026 at 9:27 AM (CEST). Approximate location: Rzeszów, PL.",T(9,28,9,27),1,"AI"),
+R(19,"Google",GO,"Alert bezpieczeństwa","Nowe logowanie z urządzenia Windows. Wykryliśmy nowe logowanie na Twoje konto Google z urządzenia Windows. Jeśli to Ty, nie musisz nic robić. Jeśli nie, pomożemy Ci zabezpieczyć konto.",T(9,28,9,25),1,"Konto"),
+R(20,"ChatGPT",CG,"Zrozum swoje zadanie","Zamień polecenie w wyjaśnienie i ćwiczenia.",T(9,27,11,0),1,"AI"),
+R(21,"Instagram",IG,"Zobacz materiały użytkowników niedzial.jr, emilia_tyrpak i innych w Twoich aktualnościach","Nowe osoby do odkrycia. Konta proponowane na podstawie Twoich zainteresowań: niedzial.jr, emilia_tyrpak i jeszcze 4. Otwórz Instagram.",T(9,26,18,40),1,"Social"),
+R(22,"ChatGPT",CG,"ChatGPT ma teraz nowe możliwości","Nowe sposoby tworzenia, głośnego myślenia i odkrywania nowych możliwości. Nie próżnowaliśmy. Zobacz, co nowego mamy dla Ciebie. Od ożywiania swojej wyobraźni dzięki programowi Images 2.5, przez głosowe rozmowy.",T(9,25,12,0),1,"AI"),
+R(23,"Instagram",IG,"Zobacz, co udostępniają lifelesstachacz i 8 innych użytkowników","Sprawdź, co słychać w aplikacji Instagram lifelesstachacz, __turass__ i inni użytkownicy opublikowali coś nowego. Otwórz Instagram. Masz 1 powiadomienie, które mogło nie zostać wyświetlone.",T(9,24,17,2),1,"Social"),
+R(24,"IceHost.pl – Bezpie.",IH,"Server Installed","IceHost.PL Witaj kobus2. Twój serwer został zainstalowany i jest gotowy do użycia. Nazwa Twojego serwera: kuba lysy Serwer. Zaloguj się. Pozdrawiamy, IceHost.PL",T(9,21,17,5),1,"Hosting","","<p>IceHost.PL</p><p>Witaj kobus2. Twój serwer został zainstalowany i jest gotowy do użycia.</p><p>Nazwa Twojego serwera: <b>kuba lysy Serwer</b></p><p><a href=\"https://example.com/login\">Zaloguj się</a></p><p>Pozdrawiamy,<br>IceHost.PL</p>"),
+R(25,"Płatności CashBill",CB,"Potwierdzenie Płatności CashBill (identyfikator: hhksuaruha)","Potwierdzamy przyjęcie płatności. Twoja wpłata została przekazana do sprzedawcy. W przypadku problemów dotyczących zakupionego towaru lub usługi prosimy o bezpośredni kontakt ze sprzedawcą.",T(9,21,16,43),1,"Płatności"),
+R(26,"Płatności CashBill",CB,"Rozpoczęcie Nowej Płatności CashBill (identyfikator: hhksuaruha)","Potwierdzamy rozpoczęcie nowej płatności. Szczegóły transakcji. Data rozpoczęcia: 21.09.2026 16:41:54. Identyfikator: hhksuaruha. Odbiorca: SKYPASS SOLUTIONS SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ.",T(9,21,16,42),0,"Płatności","","<p>Potwierdzamy rozpoczęcie nowej płatności.</p><table><tr><td>Data rozpoczęcia</td><td>21.09.2026 16:41:54</td></tr><tr><td>Identyfikator</td><td>hhksuaruha</td></tr><tr><td>Odbiorca</td><td>SKYPASS SOLUTIONS Sp. z o.o.</td></tr></table>"),
+R(27,"IceHost.pl – Bezpie.",IH,"Account Created","IceHost.PL Witaj kuba lysy! Otrzymujesz tę wiadomość e-mail, ponieważ konto zostało przez Ciebie utworzone w dniu IceHost.PL. Nazwa Użytkownika: kobus2. Potwierdź mail.",T(9,21,16,30),0,"Hosting")
+];
+const FOLDERS=[["inbox","Odebrane","M4 4h16v16H4zM4 14h5l1 2h4l1-2h5"],["starred","Oznaczone gwiazdką","M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"],["archive","Archiwum","M3 4h18v4H3zM5 8v12h14V8M10 12h4"]];
+const IC={menu:"M3 6h18M3 12h18M3 18h18",back:"M19 12H5M12 19l-7-7 7-7",ref:"M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5",x:"M18 6L6 18M6 6l12 12",clip:"M21 12l-9 9a5 5 0 0 1-7-7l9-9a3 3 0 0 1 4 4l-9 9a1 1 0 0 1-2-2l8-8",inbox:"M4 4h16v16H4zM4 14h5l1 2h4l1-2h5"};
+const svg=p=>'<svg viewBox="0 0 24 24"><path d="'+p+'"/></svg>';
+const STAR="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z";
+const KEY="poczta.prefs.v1";
+let P={folder:"inbox",unreadOnly:false,read:[]};
+try{Object.assign(P,JSON.parse(localStorage.getItem(KEY)||"{}"))}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(P))}catch(e){}};
+let q="",loading=true,drawer=false,openId=null,spin=false;
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const norm=s=>s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/ł/g,"l");
+const hue=s=>[...s].reduce((a,c)=>(a*31+c.charCodeAt(0))%360,7);
+const ini=n=>n.split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase();
+const av=n=>'<div class="av" style="background:hsl('+hue(n)+' 55% 42%)">'+esc(ini(n))+'</div>';
+function fmt(iso){const d=new Date(iso),n=new Date();if(d.toDateString()===n.toDateString())return d.toLocaleTimeString("pl-PL",{hour:"2-digit",minute:"2-digit"});return d.toLocaleDateString("pl-PL",d.getFullYear()===n.getFullYear()?{day:"numeric",month:"short"}:{day:"numeric",month:"short",year:"numeric"})}
+const unread=m=>m.u&&!P.read.includes(m.id);
+const ALLOW=new Set("a b i u em strong p br ul ol li h1 h2 h3 h4 blockquote table thead tbody tr td th div span hr pre code".split(" "));
+const DROP=new Set("script style iframe object embed img svg form link meta video audio input button base noscript".split(" "));
+function sanitize(html){const doc=new DOMParser().parseFromString(html,"text/html");
+ const walk=root=>{for(const el of Array.from(root.children)){const t=el.tagName.toLowerCase();
+  if(DROP.has(t)){el.remove();continue}
+  if(!ALLOW.has(t)){walk(el);el.replaceWith(...Array.from(el.childNodes));continue}
+  for(const a of Array.from(el.attributes))if(!(t==="a"&&a.name==="href"))el.removeAttribute(a.name);
+  if(t==="a"){const h=el.getAttribute("href")||"";if(/^(https?:|mailto:|tel:)/i.test(h)){el.setAttribute("target","_blank");el.setAttribute("rel","noopener noreferrer nofollow")}else el.removeAttribute("href")}
+  walk(el)}};
+ walk(doc.body);return doc.body.innerHTML}
+function visible(){const k=norm(q.trim());
+ return MAILS.filter(m=>P.folder==="starred"?m.st:m.f===P.folder)
+ .filter(m=>!k||norm([m.s,m.sn,m.n,m.e,...m.l].join(" ")).includes(k))
+ .filter(m=>!P.unreadOnly||unread(m)).sort((a,b)=>new Date(b.d)-new Date(a.d))}
+function fetchSim(){loading=true;render();clearTimeout(fetchSim.t);fetchSim.t=setTimeout(()=>{loading=false;spin=false;render()},350)}
+function viewMail(m){
+ return '<div class="bar"><button class="ic" data-a="back" aria-label="Wróć do skrzynki">'+svg(IC.back)+'</button></div><article class="msg"><h1>'+esc(m.s)+'</h1>'+m.l.map(l=>'<span class="chip">'+esc(l)+'</span> ').join("")+
+ '<div class="from">'+av(m.n)+'<div class="t"><strong>'+esc(m.n)+'</strong><div class="mut">'+esc(m.e)+'</div><div class="mut">'+new Date(m.d).toLocaleString("pl-PL",{dateStyle:"long",timeStyle:"short"})+'</div></div>'+(m.st?'<svg class="star on" viewBox="0 0 24 24"><path d="'+STAR+'"/></svg>':"")+'</div>'+
+ '<div class="body">'+sanitize(m.b)+'</div>'+
+ (m.a.length?'<h3 style="margin:24px 0 8px;font-size:14px">Załączniki ('+m.a.length+')</h3>'+m.a.map(a=>'<div class="att"><span class="ext">'+esc(a[2])+'</span><span class="n">'+esc(a[0])+'</span><span class="mut">'+esc(a[1])+'</span></div>').join("")+'<p class="mut sm">Podgląd załączników wymaga prawdziwego źródła danych.</p>':"")+'</article>'}
+function viewList(){
+ const label=FOLDERS.find(f=>f[0]===P.folder)[1],list=visible();let rows="";
+ if(loading)rows=Array.from({length:6},()=>'<div class="row sk"><div class="av"></div><div class="ln"><i></i><i></i><i></i></div></div>').join("");
+ else if(!list.length)rows='<div class="state">'+svg(IC.inbox).replace("<svg",'<svg width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.5"')+'<p>'+(q?"Brak wyników dla „"+esc(q)+"”":P.unreadOnly?"Brak nieprzeczytanych wiadomości":"Ta skrzynka jest pusta")+'</p></div>';
+ else rows=list.map(m=>'<button class="row'+(unread(m)?" unread":"")+'" data-id="'+m.id+'">'+av(m.n)+'<div class="ln"><div class="l1"><span class="nm">'+esc(m.n)+'</span><time>'+fmt(m.d)+'</time></div><div class="l2">'+esc(m.s)+'</div><div class="l3"><span class="sn">'+esc(m.sn)+'</span>'+(m.a.length?'<svg class="star" viewBox="0 0 24 24" style="stroke:var(--mut)"><path d="'+IC.clip+'"/></svg>':"")+m.l.map(l=>'<span class="chip">'+esc(l)+'</span>').join("")+'<svg class="star'+(m.st?" on":"")+'" viewBox="0 0 24 24"><path d="'+STAR+'"/></svg></div></div></button>').join("");
+ return '<div class="bar"><div class="search"><button class="ic" data-a="menu" aria-label="Menu">'+svg(IC.menu)+'</button><input id="q" type="search" placeholder="Szukaj w: '+esc(label)+'" aria-label="Szukaj wiadomości" value="'+esc(q)+'" autocomplete="off">'+(q?'<button class="ic" data-a="clear" aria-label="Wyczyść">'+svg(IC.x)+'</button>':"")+'<button class="ic'+(spin?" spin":"")+'" data-a="refresh" aria-label="Odśwież">'+svg(IC.ref)+'</button></div></div>'+
+ '<div class="sub"><h2>'+label+'</h2><button class="pill'+(P.unreadOnly?" on":"")+'" data-a="unread" aria-pressed="'+P.unreadOnly+'">Nieprzeczytane</button></div><main>'+rows+'<p class="demo">Dane demonstracyjne – to nie jest prawdziwe konto pocztowe. Tryb tylko do odczytu.</p></main>'+
+ (drawer?'<div class="scrim" data-a="close"><nav class="drawer" aria-label="Foldery"><h1>Poczta</h1><p class="mut sm">Tryb tylko do odczytu</p>'+FOLDERS.map(f=>'<button class="nav'+(P.folder===f[0]?" on":"")+'" data-f="'+f[0]+'">'+svg(f[2])+f[1]+'</button>').join("")+'</nav></div>':"")}
+function render(){
+ const focus=document.activeElement&&document.activeElement.id==="q",pos=focus?document.activeElement.selectionStart:0;
+ const m=openId&&MAILS.find(x=>x.id===openId);
+ $("#app").innerHTML=m?viewMail(m):viewList();
+ if(focus){const i=$("#q");if(i){i.focus();i.setSelectionRange(pos,pos)}}}
+document.addEventListener("click",e=>{
+ const t=e.target.closest("[data-a],[data-id],[data-f]");if(!t)return;
+ if(t.dataset.f){P.folder=t.dataset.f;drawer=false;q="";save();fetchSim();return}
+ if(t.dataset.id){const id=+t.dataset.id;if(!P.read.includes(id)){P.read.push(id);save()}openId=id;scrollTo(0,0);render();return}
+ const a=t.dataset.a;
+ if(a==="close"){if(e.target===t){drawer=false;render()}}
+ else if(a==="menu"){drawer=true;render()}
+ else if(a==="back"){openId=null;render()}
+ else if(a==="clear"){q="";render()}
+ else if(a==="unread"){P.unreadOnly=!P.unreadOnly;save();render()}
+ else if(a==="refresh"){spin=true;fetchSim()}});
+document.addEventListener("input",e=>{if(e.target.id==="q"){q=e.target.value;render()}});
+fetchSim();
+</script>
+</body>
+</html>
